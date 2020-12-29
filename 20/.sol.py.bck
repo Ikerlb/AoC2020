@@ -1,0 +1,92 @@
+from itertools import chain
+from math import prod, sqrt
+
+def parse(tile):
+    i, tile = tile.split(":\n")
+    k = (int(i.replace("Tile ", "")))
+    t = [list(l) for l in tile.splitlines()]
+    return k, t
+
+with open("input.txt") as f:
+    txt = f.read()
+    tiles = dict([parse(t) for t in txt.split("\n\n") if t])
+
+def hash_list(l):
+    n = len(l)
+    s = r = 0
+    for i in range(n):
+        if l[i] == "#":
+            s += 2 ** i
+            r += 2 ** (n - i - 1) 
+    return s, r
+
+def hash_tile(tile):
+    n = len(tile)
+    res = []
+    res.append(hash_list(tile[0]))
+    res.append(hash_list(tile[-1]))
+    res.append(hash_list([tile[i][0] for i in range(n)]))
+    res.append(hash_list([tile[i][-1] for i in range(n)]))
+    return res
+
+            
+def find_matches(iden, ht):
+    c = 0
+    idfk = set(chain(*ht[iden]))
+    res = []
+    for k,v in ht.items():
+        if k == iden:
+            continue
+        if idfk & set(chain(*v)):
+            res.append(k)
+    return res
+
+def pattern_to_offsets(m):
+    for r in range(len(m)):
+        for c in range(len(m[0])):
+            if m[r][c] == "#":
+                yield r, c
+
+def neighbors(m, r, c):
+    g = prod([0, -1, 1])
+    next(g)
+    for dr, dc in prod:
+        if 0<=dr+r<len(m) and 0<=dc+c<len(m[0]):
+            yield r + dr, c + dc
+
+
+def rotate(m):
+    nm = [r[:] for r in m]
+    n = len(nm)
+    for l in range(n // 2):
+        s, e = l, n - l - 1
+        for i in range(e - s):
+            nm[s][s + i], aux = nm[e - i][s], nm[s][s + i]
+            nm[s + i][e], aux = aux, nm[s + i][e]
+            nm[e][e - i], aux = aux, nm[e][e - i]
+            nm[e - i][s] = aux
+    return nm
+
+def rotations(tile):
+    # 4 clockwise rotations
+    m = tile
+    for _ in range(4):
+        yield m # rotation       
+        yield [r for r in reversed(m)] #rotation flipped on y
+        m = rotate(m)
+
+def assemble_grid(tiles):
+    ht = {i:hash_tile(t) for i,t in tiles.items()}
+    by_matches = {i:find_matches(i, ht) for i in tiles}
+    n = int(len(tiles) ** (0.5)) # grid must be square!
+    # now we want to take an arbitrary corner
+    # which is any tile that has only 2 adjacent tiles
+    # (which in turn is only possible because edges are
+    # unique, praise the lord)
+    # and rotate it until it matches 
+
+def part1(t = tiles):
+    ht = {i:hash_tile(t) for i,t in tiles.items()}
+    g = [i for i in tiles if len(find_matches(i, ht)) == 2]
+    return prod(g)
+
